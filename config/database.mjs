@@ -1,11 +1,13 @@
 import oracledb from 'oracledb';
 
+import { appConfig } from './app.mjs';
 export async function createPool() {
+    console.log(appConfig);
     try {
         await oracledb.createPool({
-            user : "c##mm",
-            password : "mgm2005",
-            connectString : "localhost:1521/XEPDB1"
+            user : appConfig.oracledb.user,
+            password : appConfig.oracledb.password,
+            connectString : appConfig.oracledb.connectString
         });
     } catch (err) {
         console.error(err.message);
