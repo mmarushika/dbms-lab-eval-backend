@@ -1,6 +1,6 @@
 import oracledb from 'oracledb';
 
-import { getCreateTableQuery } from "./utilities/OracleSQLConverters.js";
+import { getCreateTableQuery } from "./utilities/OracleSQLConverters.mjs";
 
 let schema = {
     tableName: 'employee', 

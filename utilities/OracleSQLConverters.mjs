@@ -1,3 +1,4 @@
+
 export function getCreateTableQuery(schema) {
     let columns = schema.columns;
     let sql = `CREATE TABLE ${schema.tableName} (`
