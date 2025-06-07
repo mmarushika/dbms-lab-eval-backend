@@ -4,7 +4,7 @@ import { getCreateTableQuery } from "../utilities/OracleSQLConverters.mjs";
 export async function createSchema(schema) {
     let sql = getCreateTableQuery(schema)
     let connection;
-    try {
+    try { 
         // get connection from the pool and use it    
         connection = await oracledb.getConnection();
         const result = await connection.execute(sql);

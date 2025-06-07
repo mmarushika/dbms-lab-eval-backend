@@ -18,7 +18,8 @@ app.use(bodyParser.urlencoded());
 
 app.use(questionRouter);
 
-app.listen(port, () => {
-    createPool();
+app.listen(port, async () => {
+    // create pool on app initiation
+    await createPool();
     console.log(`listening on port ${port}`);
 })
