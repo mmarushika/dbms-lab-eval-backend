@@ -1,21 +1,14 @@
-async function getResultColumns(result) {
+export async function parseResult(result) {
     let rs = result.resultSet;
     let md = result.metaData;
 
-    let columns = []
-    for(let i = 0; i < md.length; i++) {
-        columns.push({
-            name : md[i].name,
-            dbType : md[i].dbTypeName,
-            values : []
-        })
-    }
-
+    let rows = [];
     for await (const row of rs) {
-        console.log(row);
-        for(let i = 0; i < row.length; i++) {
-            columns[i].values.push(row[i]);
+        let rowObj = {}
+        for(let i = 0; i < md.length; i++) {
+            rowObj[md[i].name] = row[i];
         }
+        rows.push(rowObj);
     }
-    return columns;
+    return rows;
 }

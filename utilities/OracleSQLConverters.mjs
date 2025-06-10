@@ -1,14 +1,14 @@
 
 export function getCreateTableQuery(schema) {
-    let columns = schema.columns;
+    const rows = schema.rows;
     let sql = `CREATE TABLE ${schema.tableName} (`
-    for(let i = 0; i < columns.length; i++) {
+    for(let i = 0; i < rows.length; i++) {
         console.log()
-        sql += `${columns[i].columnName} ${schema.columns[i].columnType}`
-        if(columns[i].columnType == 'VARCHAR2') {
+        sql += `${rows[i].columnName} ${schema.rows[i].columnType}`
+        if(rows[i].columnType == 'VARCHAR2') {
             sql +=`(100)`;
         }
-        if(i != columns.length - 1) {
+        if(i != rows.length - 1) {
             sql += ", "
         } else {
             sql += ")";
@@ -16,6 +16,34 @@ export function getCreateTableQuery(schema) {
     }
     return sql;
 }
+
+export function getDropTableQuery(tableName) {
+    return `DROP TABLE ${tableName}`;
+}
+
+export function getInsertTableInputQuery(tableName, rows) {
+    let sql = `INSERT INTO ${tableName} VALUES (`
+
+    let columnNames = Object.keys(rows[0]);
+    for(let i = 0; i < columnNames.length; i++) {
+        sql += `:${columnNames[i]}`
+        if(i != columnNames.length - 1) {
+            sql += ", "
+        } else {
+            sql += ")";
+        }
+    }
+
+    return {
+        sql: sql,
+        binds: rows
+    }
+}
+
+export function getTruncateTableQuery(tableName) {
+    return `TRUNCATE TABLE ${tableName}`;
+}
+
 /*export function getCreateTableQuery(schema) {
     let query = `CREATE TABLE :tableName (`
     for(let i = 0; i < schema.columns.length; i++) {
