@@ -3,20 +3,22 @@ import mongoose from 'mongoose';
 export const Schema = mongoose.Schema
 
 export const questionSchema = new Schema({
+    course: { type: String, required: true},
+    category: { type: String, required: true},
     title: { type: String, required: true },
     description: { type: String, required: true },
-    schemas: [
+});
+
+export const tableSchema = new Schema ({
+    questionId: { type: Schema.Types.ObjectId, ref: 'Question' },
+    tableName: { type: String, required: true },
+    rows: [
         {
-            tableName: { type: String, required: true },
-            rows: [
-                {
-                columnName: { type: String, required: true },
-                columnType: { type: String, required: true }
-                }
-            ]
+            columnName: { type: String, required: true },
+            columnType: { type: String, required: true }
         }
     ]
-});
+})
 
 export const testCaseSchema = new Schema({
     questionId: { type: Schema.Types.ObjectId, ref: 'Question' },
@@ -44,5 +46,6 @@ export const submissionSchema = new Schema({
 });
 
 export const Question = mongoose.model('Question', questionSchema);
+export const Tables = mongoose.model('Question', tableSchema);
 export const TestCase = mongoose.model('TestCase', testCaseSchema);
 export const Submission = mongoose.model('Submission', submissionSchema);

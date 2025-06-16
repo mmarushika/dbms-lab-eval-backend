@@ -8,7 +8,12 @@ export function _validate(result, output) {
     console.log("output", output);
     let outputColumns = Object.keys(output[0]);
     let resultColumns = Object.keys(result[0]);
-
+    // Check for wrong no. of rows 
+    if(result.length != output.length) {
+        console.log("wr");
+        return false;
+    }
+    
     // Check for wrong no. of columns
     if (outputColumns.length != resultColumns.length) {
         console.log("wc");

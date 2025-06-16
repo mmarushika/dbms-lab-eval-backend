@@ -5,6 +5,6 @@ import * as controllers from '../controllers/evaluationControllers.mjs';
 
 const evaluationRouter = express.Router();
 
-evaluationRouter.post("/api/v1/submit", controllers.evaluationController);
+evaluationRouter.post("/api/v1/submissions", controllers.evaluationController);
 
-export default questionRouter;
+export default evaluationRouter;

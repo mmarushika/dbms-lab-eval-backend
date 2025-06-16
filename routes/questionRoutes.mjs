@@ -1,10 +1,10 @@
 
 import express from 'express';
 
-import * as controllers from '../controllers/evaluationControllers.mjs';
+import * as controllers from '../controllers/questionControllers.mjs';
 
 const questionRouter = express.Router();
 
-questionRouter.post("/api/v1/questions", controllers.evaluationController);
+questionRouter.get("/api/v1/questions", controllers.fetchQuestionController);
 
 export default questionRouter;

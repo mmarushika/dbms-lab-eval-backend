@@ -4,8 +4,11 @@ import cors from 'cors';
 
 import { appConfig } from './config/app.mjs';
 import { createPool } from "./config/database.mjs";
+import mongoose from 'mongoose';
 
 import questionRouter from './routes/questionRoutes.mjs';
+import testCaseRouter from './routes/testCaseRoutes.mjs';
+import evaluationRouter from './routes/evaluationRoutes.mjs';
 
 const port = 8000;
 const app = express();
@@ -17,9 +20,15 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded());
 
 app.use(questionRouter);
+app.use(testCaseRouter);
+app.use(evaluationRouter);
 
-app.listen(port, async () => {
-    // create pool on app initiation
+async function run() {
     await createPool();
-    console.log(`listening on port ${port}`);
-})
+    await mongoose.connect('mongodb://127.0.0.1:27017/dbms-lab-eval');
+    app.listen(port, async () => {
+        console.log(`listening on port ${port}`);
+    })
+}
+
+run();
