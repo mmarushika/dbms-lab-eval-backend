@@ -7,8 +7,8 @@ import { createPool } from "./config/database.mjs";
 import mongoose from 'mongoose';
 
 import questionRouter from './routes/questionRoutes.mjs';
-import testCaseRouter from './routes/testCaseRoutes.mjs';
 import evaluationRouter from './routes/evaluationRoutes.mjs';
+import submissionRouter from './routes/submissionRoutes.mjs';
 
 const port = 8000;
 const app = express();
@@ -20,12 +20,22 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded());
 
 app.use(questionRouter);
-app.use(testCaseRouter);
+app.use(submissionRouter);
 app.use(evaluationRouter);
 
 async function run() {
-    await createPool();
-    await mongoose.connect('mongodb://127.0.0.1:27017/dbms-lab-eval');
+    try {
+        await createPool();
+        console.log("oracledb connected")
+    } catch(err) {
+        console.log(err.message);
+    }
+    try {
+        await mongoose.connect('mongodb://127.0.0.1:27017/dbms-lab-eval');
+        console.log("mongodb connected")
+    } catch(err) {
+        console.log(err.message);
+    }
     app.listen(port, async () => {
         console.log(`listening on port ${port}`);
     })

@@ -69,9 +69,12 @@ export async function truncateTable(tableName) {
         // console.log(result);
     } catch (error) {
         console.log(error.message);
+    } finally {
+        if(connection) {
+            await connection.close();
+        }
     }
 
-    await connection.close();
 }
 
 export async function executeSolution(sql) {
@@ -83,9 +86,13 @@ export async function executeSolution(sql) {
         let result = await connection.execute(sql, [], {resultSet: true})
         let output = await parseResult(result);
         console.log("execute solution output", output);
+
         return output;
     } catch (error) {
         throw error;
+    } finally {
+        if(connection) {
+            await connection.close();
+        }
     }
-    await connection.close();
 }

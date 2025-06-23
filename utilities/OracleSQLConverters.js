@@ -4,7 +4,7 @@ export function getCreateTableQuery(schema) {
     let sql = `CREATE TABLE ${schema.tableName} (`
     for(let i = 0; i < rows.length; i++) {
         console.log()
-        sql += `${rows[i].columnName} ${schema.rows[i].columnType}`
+        sql += `${rows[i].columnName} ${rows[i].columnType}`
         if(rows[i].columnType == 'VARCHAR2') {
             sql +=`(100)`;
         }

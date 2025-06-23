@@ -1,9 +1,9 @@
-import { getTestCases } from "../models/TestCases.mjs";
-import { createTable, dropTable, truncateTable } from "./oracleDBServices.mjs";
-import { insertTableInput } from "./oracleDBServices.mjs";
-import { executeSolution } from "./oracleDBServices.mjs";
+import { getAllTestCases } from "../models/TestCases.js";
+import { createTable, dropTable, truncateTable } from "./oracleDBServices.js";
+import { insertTableInput } from "./oracleDBServices.js";
+import { executeSolution } from "./oracleDBServices.js";
 
-export function _validate(result, output) {
+export function compareOutput(result, output) {
     console.log("result", result);
     console.log("output", output);
     let outputColumns = Object.keys(output[0]);
@@ -40,15 +40,15 @@ export function _validate(result, output) {
     return true;
 }
 
-export async function _evaluate(code, testCase) {
+export async function evaluateQuery(code, testCase) {
     let testCaseResult = {
         testCaseId: testCase._id
     }
     try {
         let result = await executeSolution(code);
         testCaseResult["errorMsg"] = null;
-        testCaseResult["passed"] = _validate(result, JSON.parse(testCase.output));
-        testCaseResult["output"] = JSON.stringify(result);
+        testCaseResult["passed"] = compareOutput(result, testCase.output);
+        testCaseResult["output"] = result;
     } catch (error) {
         testCaseResult["errorMsg"] = error.message;
         testCaseResult["passed"] = false;
@@ -56,6 +56,16 @@ export async function _evaluate(code, testCase) {
     } finally {
         return testCaseResult;
     }
+}
+
+function _getPassedCount(testCases) {
+    let count = 0;
+    for(let testCase of testCases) {
+        if(testCase.passed) {
+            count++;
+        }
+    }
+    return count;
 }
 async function _initEvaluationEnvironment(schemas) {
     for await (const schema of schemas) {
@@ -72,7 +82,7 @@ async function _clearEvaluationEnvironment(schemas) {
 
 async function _initTestCaseEnvironment(inputs) {
     for await (const input of inputs) {
-        await insertTableInput(input.tableName, JSON.parse(input.rows));
+        await insertTableInput(input.tableName, input.rows);
     }
 }
 
@@ -82,23 +92,30 @@ async function _clearTestCaseEnvironment(schemas) {
     }
 }
 
-export async function getSubmissionReport(question, code) {
-    const testCases = await getTestCases(question._id);
-
-    await _initEvaluationEnvironment(question.schemas);
-
+export async function generateDMLSubmissionReport(
+    userId, 
+    taskId, 
+    questionId, 
+    schemas, 
+    testCases, 
+    code
+) {
+    await _initEvaluationEnvironment(schemas);
     let submission = {
-        questionId: question._id,
+        userId: userId,
+        taskId: taskId,
+        questionId: questionId,
         testCases: [],
         code: code
     }
     for await (const testCase of testCases) {
         await _initTestCaseEnvironment(testCase.input)
-        let testCaseResult = await _evaluate(code, testCase);
+        let testCaseResult = await evaluateQuery(code, testCase);
         submission.testCases.push(testCaseResult)
-        await _clearTestCaseEnvironment(question.schemas);
+        await _clearTestCaseEnvironment(schemas);
     }
-    await _clearEvaluationEnvironment(question.schemas);
+    await _clearEvaluationEnvironment(schemas);
+    submission["passedCount"] = _getPassedCount(submission.testCases);
     return submission;
 }
 

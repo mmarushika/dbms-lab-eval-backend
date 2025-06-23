@@ -1,4 +1,4 @@
-import { getTestCases } from "../models/TestCases.mjs";
+/*import { getTestCases } from "../models/TestCases.mjs";
 
 export async function fetchTestCaseController(req, res) {
     try {
@@ -9,4 +9,4 @@ export async function fetchTestCaseController(req, res) {
     } catch (err) {
         console.log(err.message);
     }
-}
+}*/
