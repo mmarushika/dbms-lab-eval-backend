@@ -1,7 +1,7 @@
 
 import express from 'express';
 
-import * as controllers from '../controllers/evaluationControllers.mjs';
+import * as controllers from '../controllers/evaluationControllers.js';
 
 const evaluationRouter = express.Router();
 

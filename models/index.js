@@ -6,6 +6,8 @@ export const questionSchema = new Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
     type: { type: String, required: true },
+    subType: { type: String, required: true },
+    outputType: { type: String },
     marks : { type: Number, required: true },
     schemas: [
         {
@@ -17,7 +19,8 @@ export const questionSchema = new Schema({
                 }
             ]
         }
-    ]
+    ],
+    solution: { type: String, required: true }
 });
 
 export const testCaseSchema = new Schema({
@@ -26,9 +29,18 @@ export const testCaseSchema = new Schema({
         {
             tableName: { type: String, required: true },
             rows:[{type: Schema.Types.Mixed, required: true}],
-        }
+        }, 
+        { _id: false }
     ],
-    output: [{type: Schema.Types.Mixed, required: true}],
+    query: {type: Schema.Types.Mixed, required: true},
+    validationQuery: {type: Schema.Types.Mixed},
+    output: [
+        {
+            tableName: { type: String, required: true },
+            rows:[{type: Schema.Types.Mixed, required: true}],
+        },
+        { _id: false }
+    ],
     hidden: {type: Boolean, required: true}
 });
 
@@ -49,6 +61,12 @@ export const submissionSchema = new Schema({
     code: {type: String, required: true}
 });
 
+export const userSchema = new Schema({
+    oracleUsername: { type: String, required: true },
+    oraclePassword: { type: String, required: true }
+});
+
 export const Question = mongoose.model('Question', questionSchema);
 export const TestCase = mongoose.model('TestCase', testCaseSchema);
 export const Submission = mongoose.model('Submission', submissionSchema);
+export const User = mongoose.model('User', userSchema);

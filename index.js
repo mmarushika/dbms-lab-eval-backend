@@ -2,13 +2,13 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 
-import { appConfig } from './config/app.mjs';
-import { createPool } from "./config/database.mjs";
+import { appConfig } from './config/app.js';
+import { cleanupIdlePools } from './services/oracleUserPoolServices.js';
 import mongoose from 'mongoose';
 
-import questionRouter from './routes/questionRoutes.mjs';
-import evaluationRouter from './routes/evaluationRoutes.mjs';
-import submissionRouter from './routes/submissionRoutes.mjs';
+import questionRouter from './routes/questionRoutes.js';
+import evaluationRouter from './routes/evaluationRoutes.js';
+import submissionRouter from './routes/submissionRoutes.js';
 
 const port = 8000;
 const app = express();
@@ -24,16 +24,26 @@ app.use(submissionRouter);
 app.use(evaluationRouter);
 
 async function run() {
+
     try {
-        await createPool();
-        console.log("oracledb connected")
-    } catch(err) {
+        const INTERVAL_MS = 5 * 60 * 1000;
+
+        setInterval(async () => {
+            try {
+                await cleanupIdlePools(); // default timeout is 10 mins as per your function
+            } catch (err) {
+                console.error("Error during idle pool cleanup:", err);
+            }
+        }, INTERVAL_MS);
+        //await createPool();
+        //console.log("oracledb connected")
+    } catch (err) {
         console.log(err.message);
     }
     try {
         await mongoose.connect('mongodb://127.0.0.1:27017/dbms-lab-eval');
         console.log("mongodb connected")
-    } catch(err) {
+    } catch (err) {
         console.log(err.message);
     }
     app.listen(port, async () => {

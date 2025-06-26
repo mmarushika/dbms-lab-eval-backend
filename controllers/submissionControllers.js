@@ -1,4 +1,7 @@
-import { generateDMLSubmissionReport } from '../services/dmlEvaluationServices.js' ;
+import { 
+  generateDMLEvaluationReport,
+  generateSelectTableEvaluationReport
+} from "../services/reportGenerationServices.js";
 import { getQuestion } from "../models/Questions.js";
 
 import { 
@@ -14,7 +17,7 @@ export async function createSubmissionController(req, res) {
   try {
     const question = await getQuestion(req.body.questionId);
     const testCases = await getAllTestCases(question._id);
-    let result = await generateDMLSubmissionReport(
+    let result = await generateDMLEvaluationReport(
       req.body.userId, 
       req.body.taskId,
       question._id, 
