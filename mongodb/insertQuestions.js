@@ -5,6 +5,268 @@ import { User } from '../models/index.js';
 
 await mongoose.connect('mongodb://localhost:27017/dbms-lab-eval'); // Change your DB
 
+await TestCase.insertOne({
+  questionId: new mongoose.Types.ObjectId('6864195a343034ea76ab5345'),
+  input: {
+    tables: [
+      {
+        tableName: "STUDENTS",
+        rows: [
+          { STUDENT_ID: "S001", STUDENT_NAME: "Alice", EMAIL: "alice@example.com" },
+          { STUDENT_ID: "S002", STUDENT_NAME: "Bob", EMAIL: "bob@example.com" }
+        ]
+      }
+    ],
+    variables: [
+      { dir: "IN", type: "VARCHAR2", name: "P_STUDENT_ID", value: "S002" },
+      { dir: "IN", type: "VARCHAR2", name: "P_NEW_EMAIL", value: "bob.new@example.com" }
+    ]
+  },
+  output: {
+    tables: [
+      {
+        tableName: "STUDENTS",
+        rows: [
+          { STUDENT_ID: "S001", STUDENT_NAME: "Alice", EMAIL: "alice@example.com" },
+          { STUDENT_ID: "S002", STUDENT_NAME: "Bob", EMAIL: "bob.new@example.com" }
+        ]
+      }
+    ],
+    variables: [],
+    dbms_output: []
+  },
+  hidden: false,
+  outputTypes: ["tables"]
+});
+
+/* 
+
+await Question.insertOne({
+  title: "Update a Student's Email",
+  description: "Write a PL/SQL procedure named UPDATE_STUDENT_EMAIL that updates the EMAIL of a student in the STUDENTS table, given the STUDENT_ID and the new EMAIL.",
+  type: "procedure",
+  subType: "basic-update",
+  outputType: "tables",
+  marks: 10,
+  schemas: [
+    {
+      tableName: "STUDENTS",
+      rows: [
+        { columnName: "STUDENT_ID", columnType: "VARCHAR2" },
+        { columnName: "STUDENT_NAME", columnType: "VARCHAR2" },
+        { columnName: "EMAIL", columnType: "VARCHAR2" }
+      ]
+    }
+  ],
+  solutionQuery: `CREATE OR REPLACE PROCEDURE UPDATE_STUDENT_EMAIL(
+    P_STUDENT_ID IN VARCHAR2,
+    P_NEW_EMAIL IN VARCHAR2
+)
+IS
+BEGIN
+    UPDATE STUDENTS
+    SET EMAIL = P_NEW_EMAIL
+    WHERE STUDENT_ID = P_STUDENT_ID;
+END;`,
+  solutionCallName: "UPDATE_STUDENT_EMAIL"
+});
+
+const questionId = await Question.findOne({ title: "Update a Student's Email" })._id;
+
+await Question.updateOne(
+  { _id: new mongoose.Types.ObjectId('685e66d84bb6dc99ef8f60a2') },
+  {
+    $set: {
+      solutionCallName: 'update_long_term_salaries' // 🔁 Replace with desired name if different
+    }
+  }
+);
+
+
+ await TestCase.create({
+  questionId: '685e66d84bb6dc99ef8f60a2',
+  hidden: false,
+  input: {
+    tables: [
+      {
+        tableName: 'EMPLOYEES',
+        rows: [
+          { ID: 1, NAME: 'ALICE', SALARY: 70000, DEPARTMENT: 'HR' },
+          { ID: 2, NAME: 'BOB', SALARY: 80000, DEPARTMENT: 'SALES' }
+        ]
+      }
+    ],
+    variables: [
+      {
+        dir: 'IN',
+        type: 'VARCHAR2',
+        name: 'P_NAME',
+        value: 'ALICE'
+      }
+    ]
+  },
+  output: {
+    tables: [],
+    variables: [
+      {
+        dir: 'OUT',
+        type: 'NUMBER',
+        name: 'P_SALARY',
+        value: '70000'
+      }
+    ],
+    dbms_output: ["Department: HR"]
+  },
+  outputTypes: ['VARIABLES', 'DBMS_OUTPUT']
+});
+
+ await TestCase.create({
+    questionId: '685e66d84bb6dc99ef8f60a2',
+    hidden: false,
+    input: {
+        tables: [
+            {
+                tableName: "EMPLOYEES",
+                rows: [
+                    { ID: 1, NAME: "ALICE", SALARY: 70000, DEPARTMENT: "HR" },
+                    { ID: 2, NAME: "BOB", SALARY: 80000, DEPARTMENT: "SALES" }
+                ]
+            }
+        ],
+        variables: {
+            P_NAME: "ALICE"
+        }
+    },
+    output: {
+        tables: [],
+        variables: [
+            {
+                dir: "OUT",
+                type: "NUMBER",
+                name: "P_SALARY",
+                value: 70000
+            }
+        ],
+        dbms_output: [
+            "Department: HR"
+        ]
+    },
+    outputTypes: ["VARIABLES", "DBMS_OUTPUT"]
+});
+
+
+
+ const question = await Question.create({
+  title: "Get Employee Salary",
+  description: "Write a PL/SQL procedure named GET_EMP_SALARY that takes an employee name as input and returns the salary in an OUT parameter. Also print the employee's department using DBMS_OUTPUT.",
+  type: "PLSQL",
+  subType: "PROCEDURE",
+  outputType: "VARIABLES_AND_OUTPUT",
+  marks: 10,
+  schemas: [
+    {
+      tableName: "EMPLOYEES",
+      rows: [
+        { columnName: "ID", columnType: "NUMBER" },
+        { columnName: "NAME", columnType: "VARCHAR2(100)" },
+        { columnName: "SALARY", columnType: "NUMBER" },
+        { columnName: "DEPARTMENT", columnType: "VARCHAR2(100)" }
+      ]
+    }
+  ],
+  solutionQuery: `
+    CREATE OR REPLACE PROCEDURE GET_EMP_SALARY (
+      P_NAME IN VARCHAR2,
+      P_SALARY OUT NUMBER
+    ) IS
+      V_DEPT VARCHAR2(100);
+    BEGIN
+      SELECT SALARY, DEPARTMENT INTO P_SALARY, V_DEPT
+      FROM EMPLOYEES
+      WHERE NAME = P_NAME;
+
+      DBMS_OUTPUT.PUT_LINE('Department: ' || V_DEPT);
+    END;
+  `
+});
+
+
+ const questionDoc = new Question({
+  title: "Update Salaries of Long-Term Employees",
+  description: `You are given a table called EMPLOYEES with the following structure:
+
+- ID (NUMBER): Unique identifier for each employee  
+- NAME (VARCHAR2): Name of the employee  
+- JOIN_YEAR (NUMBER): Year the employee joined the company  
+- SALARY (NUMBER): Current salary of the employee
+
+Write a PL/SQL block that increases the SALARY of all employees who joined **before the year 2015** by **15%**.
+
+Your PL/SQL block should perform the update using control structures (i.e., loops or conditional statements), not a single UPDATE SQL statement.
+
+After execution, the EMPLOYEES table should reflect the updated salaries.`,
+  type: "PLSQL",
+  subType: "BLOCK",
+  outputType: "TABLE",
+  marks: 10,
+  schemas: [
+    {
+      tableName: "EMPLOYEES",
+      rows: [
+        { columnName: "ID", columnType: "NUMBER" },
+        { columnName: "NAME", columnType: "VARCHAR2(50)" },
+        { columnName: "JOIN_YEAR", columnType: "NUMBER" },
+        { columnName: "SALARY", columnType: "NUMBER" }
+      ]
+    }
+  ],
+  solutionQuery: `
+DECLARE
+  CURSOR emp_cur IS
+    SELECT ID, SALARY, JOIN_YEAR FROM EMPLOYEES WHERE JOIN_YEAR < 2015;
+BEGIN
+  FOR emp IN emp_cur LOOP
+    UPDATE EMPLOYEES
+    SET SALARY = SALARY * 1.15
+    WHERE ID = emp.ID;
+  END LOOP;
+END;`,
+  validationQuery: `SELECT * FROM EMPLOYEES ORDER BY ID`
+});
+
+const savedQuestion = await questionDoc.save();
+
+const testCaseDoc = new TestCase({
+  questionId: savedQuestion._id,
+  input: [
+    {
+      tableName: "EMPLOYEES",
+      rows: [
+        { ID: 1, NAME: "Alice", JOIN_YEAR: 2010, SALARY: 50000 },
+        { ID: 2, NAME: "Bob", JOIN_YEAR: 2018, SALARY: 60000 },
+        { ID: 3, NAME: "Charlie", JOIN_YEAR: 2012, SALARY: 70000 }
+      ]
+    }
+  ],
+  output: [
+    {
+      tableName: "EMPLOYEES",
+      rows: [
+        { ID: 1, NAME: "Alice", JOIN_YEAR: 2010, SALARY: 57500 },
+        { ID: 2, NAME: "Bob", JOIN_YEAR: 2018, SALARY: 60000 },
+        { ID: 3, NAME: "Charlie", JOIN_YEAR: 2012, SALARY: 80500 }
+      ]
+    }
+  ],
+  hidden: false
+});
+
+await testCaseDoc.save();
+
+console.log("✅ Question and test case inserted successfully");
+await mongoose.disconnect();
+
+
  // 2. Insert test case
     await TestCase.create({
       questionId: '685c262d57b30019dc4e0273',
@@ -32,7 +294,7 @@ await mongoose.connect('mongodb://localhost:27017/dbms-lab-eval'); // Change you
       ],
       hidden: false
     });
-/*await Question.create({
+ await Question.create({
       title: "Update Employee Salary",
       description: "Update the salary of employees named 'Alice' to 70000.",
       type: "DML",

@@ -7,7 +7,7 @@ export const questionSchema = new Schema({
     description: { type: String, required: true },
     type: { type: String, required: true },
     subType: { type: String, required: true },
-    outputType: { type: String },
+    outputTypes: [ { type: String } ],
     marks : { type: Number, required: true },
     schemas: [
         {
@@ -20,28 +20,67 @@ export const questionSchema = new Schema({
             ]
         }
     ],
-    solution: { type: String, required: true }
+
+    solutionQuery: {type: String, required: true},
+    solutionCallName: { type: String, required: true },
+    validationQuery: { type: String }
 });
 
 export const testCaseSchema = new Schema({
-    questionId: { type: Schema.Types.ObjectId, ref: 'Question' },
-    input: [
-        {
-            tableName: { type: String, required: true },
-            rows:[{type: Schema.Types.Mixed, required: true}],
-        }, 
-        { _id: false }
-    ],
-    query: {type: Schema.Types.Mixed, required: true},
-    validationQuery: {type: Schema.Types.Mixed},
-    output: [
-        {
-            tableName: { type: String, required: true },
-            rows:[{type: Schema.Types.Mixed, required: true}],
+    questionId: { 
+        type: Schema.Types.ObjectId, 
+        ref: 'Question', 
+        required: true 
+    },
+    input: {
+        tables : [
+            {
+                tableName: { type: String },
+                rows:[{type: Schema.Types.Mixed }],
+                _id: false
+            }
+        ],
+        variables: [
+            {
+                dir: { type: String },
+                type: { type: String },
+                name: { type: String },
+                value: { type: Schema.Types.Mixed },
+                _id: false
+            }
+        ],
+        returnValue : {
+            type: { type: String },
+            _id: false
         },
-        { _id: false }
-    ],
-    hidden: {type: Boolean, required: true}
+        _id: false
+    },
+    output: {
+        tables : [
+            {
+                tableName: { type: String },
+                rows:[{type: Schema.Types.Mixed }],
+                _id: false,
+            }, 
+        ],
+        variables: [
+            {
+                dir: { type: String },
+                type: { type: String },
+                name: { type: String },
+                value: { type: Schema.Types.Mixed },
+                _id: false
+            }
+        ],
+        dbms_output: [ { type: String } ],
+        returnValue: {
+            type: { type: String },
+            value: { type: Schema.Types.Mixed },
+            _id: false
+        },
+        _id: false
+    },
+    hidden: {type: Boolean, required: true},
 });
 
 export const submissionSchema = new Schema({

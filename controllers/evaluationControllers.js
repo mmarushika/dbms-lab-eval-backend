@@ -2,7 +2,9 @@ import { getQuestion } from "../models/Questions.js";
 import { 
   generateSelectTableEvaluationReport,
   generateCreateTableEvaluationReport, 
-  generateDropTableEvaluationReport
+  generateDropTableEvaluationReport,
+  generatePLSQLBlockEvaluationReport,
+  generateDMLEvaluationReport
  } from "../services/reportGenerationServices.js";
 import { getPublicTestCases } from "../models/TestCases.js";
 
@@ -26,6 +28,11 @@ export async function evaluationController(req, res) {
       break;
       case 'DROP':
         result = await generateDropTableEvaluationReport(options);
+      break;
+      case 'PLSQL':
+        result = await generatePLSQLBlockEvaluationReport(options);
+      case 'DML':
+        result = await generateDMLEvaluationReport(options);
       break;
     }
     console.log(result);

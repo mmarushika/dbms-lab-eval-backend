@@ -1,3 +1,4 @@
+import { testCaseSchema } from "../models/index.js";
 import { 
     createTable, 
     dropTable, 
@@ -5,12 +6,14 @@ import {
     insertTableInput,
     executeSelect,
     executeQuery,
+    executePLSQLProcedure,
     describeTable, 
     dropAllTables,
-    getAllTableNames
+    getAllTableNames, 
+    selectTable
 } from "./oracleDBServices.js";
 
-export function _compareOutput(result, output) {
+export function _compareTables(result, output) {
     console.log("result", result);
     console.log("output", output);
     let outputColumns = Object.keys(output[0]);
@@ -52,26 +55,28 @@ export async function _checkIfTableExists(userId, tableName) {
     return allTables.find(i => i === tableName);
 }
 
-export async function initEvaluationEnvironment(userId, schemas) {
+export async function initEvaluationTableEnvironment(userId, schemas) {
     for await (const schema of schemas) {
         await createTable(userId, schema);
     }
 }
 
-export async function clearEvaluationEnvironment(userId, schemas) {
+export async function clearEvaluationTableEnvironment(userId, schemas) {
     /*for await (const schema of schemas) {
         await dropTable(schema.tableName);
     }*/
    await dropAllTables(userId);
 }
 
-export async function initTestCaseEnvironment(userId, inputs) {
-    for await (const input of inputs) {
-        await insertTableInput(userId, input.tableName, input.rows);
+export async function initTestCaseTableEnvironment(userId, tables) {
+    for await (const input of tables) {
+        if(input.rows.length != 0) {
+            await insertTableInput(userId, input.tableName, input.rows);
+        }
     }
 }
 
-export async function clearTestCaseEnvironment(userId, schemas) {
+export async function clearTestCaseTableEnvironment(userId, schemas) {
     console.log(userId, schemas);
     for await (const schema of schemas) {
         await truncateTable(userId, schema.tableName);
@@ -91,7 +96,7 @@ export async function evaluateSelectTable(userId, query, testCase, err) {
     try {
         let result = await executeSelect(userId, query);
         testCaseResult["errorMsg"] = null;
-        testCaseResult["passed"] = _compareOutput(result, testCase.output[0].rows);
+        testCaseResult["passed"] = _compareTables(result, testCase.output[0].rows);
         testCaseResult["output"] = [
             {
                 tableName: "",
@@ -122,13 +127,13 @@ export async function evaluateCreateTable(userId, query, testCase, err) {
         let status = true;
         let results = [];
         for (const table of testCase.output) { 
-            await clearEvaluationEnvironment(userId);
+            await clearEvaluationTableEnvironment(userId);
             await executeQuery(userId, query);
             let result = await describeTable(userId, table.tableName);
             if(result.length == 0) {
                 errorMsg = "Table name is incorrect"
                 status = false
-            } else if(!_compareOutput(result, table.rows)) {
+            } else if(!_compareTables(result, table.rows)) {
                 status = false;
             }
             results.push({
@@ -195,26 +200,28 @@ export async function evaluateDML(userId, code, testCase, err) {
         return testCaseResult;
     }
     try {
-        let result = await executeQuery(code); // Execute DML query to manipulate existing tables
+        let result = await executeQuery(userId, code); // Execute DML query to manipulate existing tables
         // Get all relevant tabels
-        let allTableNames = getAllTableNames(userId);
+        let allTableNames = await getAllTableNames(userId);
         let allTables = {};
         for(const tableName of allTableNames) {
-            allTables[tableName] = await selectTable(userId, tableName);
+           allTables[tableName] = await selectTable(userId, tableName);
         }
         let status = true;
         let results = [];
         testCaseResult["errorMsg"] = null;
 
         // For each table compare the manipulate input tables to stored output tables
-        for(table of testCase.output) {
-            testCaseResult["passed"] = _compareOutput(allTables[table.tableName], table.rows);
-            testCaseResult["output"] = [
+        for(const table of testCase.output) {
+            if( !_compareTables(allTables[table.tableName], table.rows)) {
+                status = false;
+            }
+            results.push(
                 {
                     tableName: "",
                     rows: allTables[table.tableName]
                 }
-            ]
+            );
         }
         testCaseResult["errorMsg"] = null;
         testCaseResult["passed"] = status;
@@ -227,3 +234,5 @@ export async function evaluateDML(userId, code, testCase, err) {
         return testCaseResult;
     }
 }
+
+
