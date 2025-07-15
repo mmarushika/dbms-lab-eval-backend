@@ -3,7 +3,7 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 
 import { appConfig } from './config/app.js';
-import { cleanupIdlePools } from './services/oracleUserPoolServices.js';
+import { cleanupIdlePools } from './services/oracle/oracleUserPoolServices.js';
 import mongoose from 'mongoose';
 
 import questionRouter from './routes/questionRoutes.js';

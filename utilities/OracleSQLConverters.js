@@ -68,7 +68,7 @@ export function getBindVariables(variables, returnValue) {
         if(v.dir == "IN" || v.dir == "INOUT") {
             bindVar[v.name]["val"] = v.value;
         }
-        if(v.type == "STRING" && (v.dir == "OUT" || v.dir == "INOUT")) {
+        if((v.type == "VARCHAR2" || v.type == "STRING") && (v.dir == "OUT" || v.dir == "INOUT")) {
             bindVar[v.name]["maxSize"] = 100;
         }
     }
@@ -99,6 +99,7 @@ function _getBindType(type) {
         case 'NUMBER':
             return oracledb.NUMBER;
         case 'STRING':
+        case 'VARCHAR2':
             return oracledb.STRING;
         case 'DATE':
             return oracledb.DATE;
@@ -106,7 +107,16 @@ function _getBindType(type) {
             return null;
     }
 }
-export async function getAddCheckConstraintQuery(tableName, condition) {
+
+export function getAddPrimaryKeyConstraintQuery(tableName, columnName) {
+    return `
+        ALTER TABLE ${tableName} 
+        ADD CONSTRAINT PK_${tableName}_${columnName} PRIMARY KEY (${columnName})
+    `;
+}
+
+
+/*export async function getAddCheckConstraintQuery(tableName, condition) {
     const constraintName = await _getUniqueConstraintName();
     return `
         ALTER TABLE ${tableName} 
@@ -129,17 +139,6 @@ export function getAddNotNullConstraintQuery(tableName, columnName, columnType) 
     return `ALTER TABLE ${tableName} MODIFY ${columnName} ${columnType} NOT NULL`
 }
 
-export async function getAddPrimaryKeyConstraintQuery(tableName, columnName, columnType) {
-    if (columnType === 'VARCHAR2') {
-        columnType += `(${varcharMaxSize})`
-    }
-    const constraintName = await _getUniqueConstraintName();
-    return `
-        ALTER TABLE ${tableName} 
-        ADD CONSTRAINT ${constraintName} PRIMARY KEY (${columnName})
-    `;
-}
-
 export async function getAddForeignKeyConstraintQuery(tableName, columnName, referenceTable, referenceColumn) {
     const constraintName = await _getUniqueConstraintName();
     return `
@@ -156,7 +155,7 @@ async function _getUniqueConstraintName() {
     return `Constraint${count + 1}`;
 }
 
-
+*/
 
 /*export function getCreateTableQuery(schema) {
     let query = `CREATE TABLE :tableName (`

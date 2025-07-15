@@ -5,7 +5,7 @@ export async function getAllTestCases(questionId) {
    console.log(questionId);
    let testCases = await TestCase.find(
       {questionId: questionId}
-   );
+   ).lean();
    console.log("test", testCases);
    return testCases;
 }
@@ -24,6 +24,6 @@ export async function getPublicTestCases(questionId) {
             }
          ]
       }
-   );
+   ).lean();
    return testCases;
 }

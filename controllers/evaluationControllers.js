@@ -1,11 +1,10 @@
 import { getQuestion } from "../models/Questions.js";
-import { 
-  generateSelectTableEvaluationReport,
-  generateCreateTableEvaluationReport, 
-  generateDropTableEvaluationReport,
-  generatePLSQLBlockEvaluationReport,
-  generateDMLEvaluationReport
- } from "../services/reportGenerationServices.js";
+import {
+  generateDDLEvaluationReport,
+  generateDMLEvaluationReport,
+  generatePLSQLEvaluationReport,
+  generateConstraintEvaluationReport
+} from "../services/evaluation/reportGenerationServices.js";
 import { getPublicTestCases } from "../models/TestCases.js";
 
 
@@ -14,26 +13,34 @@ export async function evaluationController(req, res) {
     const question = await getQuestion(req.body.questionId);
     const testCases = await getPublicTestCases(req.body.questionId);
     let options = {
-      userId: req.body.userId, 
+      userId: req.body.userId,
       taskId: req.body.taskId,
-      questionId: question._id, 
+      questionId: question._id,
       schemas: question.schemas,
-      testCases: testCases,
+      type: question.subType,
+      testCases: testCases.map(testCase => ({
+        ...testCase,
+        ["outputTypes"]: question?.outputTypes,
+        ["validationQuery"]: question?.validationQuery,
+        ["callName"]: question?.solutionCallName,
+      })),
       code: req.body.input
     }
     let result;
-    switch(question?.type) {
+    switch (question?.type.toUpperCase()) {
       case 'DDL':
-        result = await generateCreateTableEvaluationReport(options);
-      break;
-      case 'DROP':
-        result = await generateDropTableEvaluationReport(options);
-      break;
-      case 'PLSQL':
-        result = await generatePLSQLBlockEvaluationReport(options);
+        result = await generateDDLEvaluationReport(options);
+        break;
       case 'DML':
         result = await generateDMLEvaluationReport(options);
-      break;
+        break;
+      case 'PLSQL':
+        console.log("PLSQL controller")
+        result = await generatePLSQLEvaluationReport(options);
+        break;
+      case 'CONSTRAINT':
+        result = await generateConstraintEvaluationReport(options);
+        break;
     }
     console.log(result);
     res.send(result);
@@ -41,3 +48,6 @@ export async function evaluationController(req, res) {
     console.log(err.message);
   }
 }
+
+
+

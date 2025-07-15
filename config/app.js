@@ -11,4 +11,5 @@ export const appConfig = {
         password : process.env.ORACLE_DB_PASSWORD,
         connectString : process.env.ORACLE_DB_CONNECT_STRING
     }
-}
+};
+

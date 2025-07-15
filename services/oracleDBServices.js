@@ -1,4 +1,3 @@
-import oracledb from 'oracledb';
 import {
     getCreateTableQuery,
     getDropTableQuery,
@@ -7,8 +6,13 @@ import {
     getProcedureOrFunctionCall,
     getBindVariables
 } from '../utilities/OracleSQLConverters.js';
-import { getUserConnection } from './oracleUserPoolServices.js';
-import { parseResult } from '../utilities/OracleResultParsers.js';
+import { getUserConnection } from './oracle/oracleUserPoolServices.js';
+import { 
+    parseResult,
+    parseConstraintOutput 
+} from '../utilities/OracleResultParsers.js';
+
+import oracledb from 'oracledb';
 
 export async function createTable(userId, schema) {
     let sql = getCreateTableQuery(schema)
@@ -213,7 +217,7 @@ export async function describeTable(userId, tableName) {
     let sql = `
         SELECT COLUMN_NAME, DATA_TYPE
         FROM user_tab_columns 
-        WHERE table_name = '${tableName}'
+        WHERE table_name = '${tableName.toUpperCase()}'
         ORDER BY column_id
     `;
     let connection;
@@ -238,7 +242,6 @@ export async function describeTable(userId, tableName) {
         }
     }
 }
-
 
 export async function executeSelect(userId, sql) {
     let connection;
@@ -265,107 +268,14 @@ export async function executeSelect(userId, sql) {
 
 export async function executeQuery(userId, sql) {
     let connection;
-    console.log("solution query", sql);
     try {
-        // get connection from the pool and use it    
+        // Get user connection from the pool   
         connection = await getUserConnection(userId);
-        //connection = await oracledb.getConnection();
-        let result = await connection.execute(sql, [], { resultSet: true, autoCommit: true })
+
+        let result = await connection.execute(sql, [], { autoCommit: true })
         return result;
     } catch (error) {
-        console.log("Error executing", sql, error.message);
-        throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (closeErr) {
-                console.error("Error while closing connection:", closeErr.message);
-            }
-        }
-    }
-}
-
-export async function executePLSQLBlock(userId, block) {
-    let connection;
-    try {
-        // Get connection from the pool and use it    
-        connection = await getUserConnection(userId);
-
-        // Set dbms_output 
-        await connection.execute(`
-            BEGIN
-                DBMS_OUTPUT.ENABLE(NULL); -- NULL means unlimited buffer size
-             END;
-        `);
-
-        // Execute anonymous pl/sql block
-        await connection.execute(block, { autoCommit: true });
-
-        // Retrieve DBMS_OUTPUT
-        const result = await connection.execute(`
-            BEGIN
-                DBMS_OUTPUT.GET_LINES(:lines, :numlines);
-            END;`,
-            {
-                lines: { dir: oracledb.BIND_OUT, type: oracledb.STRING, maxArraySize: 100 },
-                numlines: { dir: oracledb.BIND_INOUT, type: oracledb.NUMBER, val: 100 }
-            }
-        );
-        return result.outBinds.lines;
-    } catch (error) {
-        console.log("Error executing", block, error.message);
-        throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (closeErr) {
-                console.error("Error while closing connection:", closeErr.message);
-            }
-        }
-    }
-}
-export async function executePLSQLProcedure(userId, procedure, procedureName, variables) {
-    let connection;
-    try {
-        // Get connection from the pool and use it    
-        connection = await getUserConnection(userId);
-
-        // Set dbms_output 
-        await connection.execute(`
-            BEGIN
-                DBMS_OUTPUT.ENABLE(NULL); -- NULL means unlimited buffer size
-             END;
-        `);
-
-        // Create procedure
-        await connection.execute(procedure, [], { autoCommit: true });
-
-        // Call procedure
-        const callResult = await connection.execute(`
-            BEGIN
-                ${getProcedureOrFunctionCall(procedureName, variables)};
-            END;`,
-            getBindVariables(variables)
-        );
-        // Retrieve DBMS_OUTPUT
-        const dbmsResult = await connection.execute(`
-            BEGIN
-                DBMS_OUTPUT.GET_LINES(:lines, :numlines);
-            END;`,
-            {
-                lines: { dir: oracledb.BIND_OUT, type: oracledb.STRING, maxArraySize: 100 },
-                numlines: { dir: oracledb.BIND_INOUT, type: oracledb.NUMBER, val: 100 }
-            }
-        );
-        let output = {
-            variables: callResult.outBinds,
-            dbms_output: dbmsResult.outBinds.lines.filter(line => line !== null)
-        }
-        return output;
-    } catch (error) {
-        console.log("Error executing", procedure, error.message);
+        console.log("Error executing query", sql, error.message);
         throw error;
     } finally {
         if (connection) {
@@ -382,7 +292,7 @@ export async function executePLSQL(userId, plsql, type, options) {
     const { callName, variables, returnValue, query } = options;
     let connection;
     try {
-        // Get connection from the pool and use it    
+        // Get user connection from the pool  
         connection = await getUserConnection(userId);
 
         // Set dbms_output 
@@ -392,12 +302,12 @@ export async function executePLSQL(userId, plsql, type, options) {
              END;
         `);
 
-        // Execute plsql (Create procedure/function/trigger, Execute block)
-        await connection.execute(plsql, [], { autoCommit: true });
-
         let callResult = null;
+        console.log(variables, getBindVariables(variables));
         switch (type) {
             case 'PROCEDURE':
+                console.log("Executing Procedure");
+                // Exectue stored procedure
                 callResult = await connection.execute(`
                     BEGIN
                         ${getProcedureOrFunctionCall(callName, variables)};
@@ -408,18 +318,22 @@ export async function executePLSQL(userId, plsql, type, options) {
                 );
                 break;
             case 'FUNCTION':
+                // Execute stored function
                 callResult = await connection.execute(`
                     BEGIN
                         :returnVal := ${getProcedureOrFunctionCall(callName, variables)};
                         COMMIT;
                     END;`
                     ,
-                    getBindVariables(variables, returnValue) 
+                    getBindVariables(variables, returnValue)
                 );
                 break;
-            case 'TRIGGER':
-                console.log("QUERY", query);
+            case 'BLOCK':
+                // Execute anonymous block
                 await connection.execute(plsql, [], { autoCommit: true });
+                break;
+            case 'TRIGGER':
+                // Excute triggering query
                 await connection.execute(query, [], { autoCommit: true });
         }
 
@@ -441,7 +355,7 @@ export async function executePLSQL(userId, plsql, type, options) {
         }
         return output;
     } catch (error) {
-        console.log("Error executing", plsql, error.message);
+        console.log("Error executing plsql", plsql, error.message);
         throw error;
     } finally {
         if (connection) {
@@ -454,3 +368,89 @@ export async function executePLSQL(userId, plsql, type, options) {
     }
 }
 
+export async function dropAllProcedures(userId) {
+    let connection;
+    try {
+        // Get connection from the pool and use it    
+        connection = await getUserConnection(userId);
+
+        await connection.execute(`
+            BEGIN
+                FOR ITEM IN (
+                    SELECT OBJECT_NAME, OBJECT_TYPE
+                    FROM USER_PROCEDURES
+                ) LOOP
+                    IF ITEM.OBJECT_TYPE = 'FUNCTION' THEN
+                        EXECUTE IMMEDIATE 'DROP FUNCTION ' || ITEM.OBJECT_NAME;
+                    ELSIF ITEM.OBJECT_TYPE = 'PROCEDURE' THEN
+                        EXECUTE IMMEDIATE 'DROP PROCEDURE ' || ITEM.OBJECT_NAME;
+                    END IF;
+                END LOOP;
+                EXECUTE IMMEDIATE 'PURGE RECYCLEBIN';
+                COMMIT;
+             END;
+        `, [], { autoCommit: true });
+    } catch (error) {
+        console.log("Error executing", error.message);
+        throw error;
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (closeErr) {
+                console.error("Error while closing connection:", closeErr.message);
+            }
+        }
+    }
+}
+
+export async function describeTableConstraints(userId) {
+    const sql = `
+    SELECT 
+        UC.CONSTRAINT_TYPE, 
+        UCC.COLUMN_NAME, 
+        UCC.TABLE_NAME,
+        UC.CONSTRAINT_NAME,
+        UC.R_CONSTRAINT_NAME,
+        PK.TABLE_NAME AS REF_TABLE_NAME,
+        PKC.COLUMN_NAME AS REF_COLUMN_NAME,
+        UTC.NULLABLE
+    FROM USER_CONSTRAINTS UC 
+    JOIN USER_CONS_COLUMNS UCC
+        ON UC.CONSTRAINT_NAME = UCC.CONSTRAINT_NAME
+    LEFT JOIN USER_CONSTRAINTS PK
+        ON UC.R_CONSTRAINT_NAME = PK.CONSTRAINT_NAME
+    LEFT JOIN USER_CONS_COLUMNS PKC 
+        ON PK.CONSTRAINT_NAME = PKC.CONSTRAINT_NAME
+    JOIN USER_TAB_COLUMNS UTC
+        ON UTC.TABLE_NAME = UCC.TABLE_NAME 
+       AND UTC.COLUMN_NAME = UCC.COLUMN_NAME
+    ORDER BY 
+        UCC.TABLE_NAME,
+        UC.CONSTRAINT_TYPE,
+        UCC.COLUMN_NAME,
+        UC.CONSTRAINT_NAME
+`;
+
+    let connection;
+    try {
+        // get connection from the pool and use it  
+        connection = await getUserConnection(userId);
+        //connection = await oracledb.getConnection();
+        let result = await connection.execute(sql, [], { resultSet: true })
+        result = await parseResult(result);
+        let output = parseConstraintOutput(result);
+        return output;
+    } catch (error) {
+        console.log("Error describing constraints", sql);
+        throw error;
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (closeErr) {
+                console.error("Error while closing connection:", closeErr.message);
+            }
+        }
+    }
+}

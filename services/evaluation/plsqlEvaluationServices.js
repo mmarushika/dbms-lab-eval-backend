@@ -2,12 +2,12 @@ import {
     executePLSQL,
     getAllTableNames,
     selectTable
-} from "../oracleDBServices";
+} from "../oracleDBServices.js";
 
-import { _compareTables } from "../../helpers/evaluationHelpers";
+import { compareTables } from "../../helpers/evaluationHelpers.js";
 
-export async function evaluatePLSQL(userId, plsql, type, testCase, err) {
-    console.log(plsql, type, testCase);
+export async function evaluatePLSQL(userId, type, plsql, testCase, err) {
+    console.log("EVALUATE PLSQL TESTCASE", testCase);
     let testCaseResult = {
         testCaseId: testCase._id
     }
@@ -48,14 +48,14 @@ export async function evaluatePLSQL(userId, plsql, type, testCase, err) {
                     rows: resultTables[name]
                 }
             )),
-            variables: variables,
+            variables: Object.keys(variables).map(key => ({name: key, value: variables[key]})),
             dbms_output: dbms_output
         }
 
         // For each table compare the result tables after execution to stored output tables
         if(testCase.outputTypes.includes("tables")) {
             for(const table of testCase.output.tables) {
-                if(!_compareTables(resultTables[table.tableName], table.rows)) {
+                if(!compareTables(resultTables[table.tableName], table.rows)) {
                     status = false;
                 } 
             }
@@ -101,7 +101,11 @@ export async function evaluatePLSQL(userId, plsql, type, testCase, err) {
         testCaseResult = {
             errorMsg: error.message,
             passed: false,
-            output: null
+            output: {
+                tables: [],
+                variables: [],
+                dbms_output: []
+            }
         }
     } finally {
         return testCaseResult;

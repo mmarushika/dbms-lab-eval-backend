@@ -44,6 +44,8 @@ export async function generateDMLEvaluationReport({
         console.log("Error", queries.length, queries);
     }
 
+    try {
+        await clearEvaluationTableEnvironment(userId);
     await initEvaluationTableEnvironment(userId, schemas);
     for await (const testCase of testCases) {
         await initTestCaseTableEnvironment(userId, testCase.input)
@@ -52,6 +54,9 @@ export async function generateDMLEvaluationReport({
         await clearTestCaseTableEnvironment(userId, schemas);
     }
     await clearEvaluationTableEnvironment(userId);
+    } catch(error) {
+        
+    }
     submission["passedCount"] = _getPassedCount(submission.testCases);
     return submission;
 }

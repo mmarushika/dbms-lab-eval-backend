@@ -5,7 +5,84 @@ import { User } from '../models/index.js';
 
 await mongoose.connect('mongodb://localhost:27017/dbms-lab-eval'); // Change your DB
 
-await TestCase.insertOne({
+// Insert the question
+const procedureQuestion = await Question.create({
+  title: "Increase Employee Salary and Return New Salary",
+  description: "Write a procedure `INCREASE_SALARY` that takes employee name and increment amount as input, updates the SALARY column, and returns the new salary via an OUT parameter.",
+  type: "PLSQL",
+  subType: "PROCEDURE",
+  outputTypes: ["tables", "variables"],
+  marks: 10,
+  schemas: [
+    {
+      tableName: "EMPLOYEES",
+      rows: [
+        { columnName: "NAME", columnType: "VARCHAR2" },
+        { columnName: "SALARY", columnType: "NUMBER" }
+      ]
+    }
+  ],
+  solutionQuery: `
+    CREATE OR REPLACE PROCEDURE INCREASE_SALARY (
+      emp_name IN VARCHAR2,
+      inc_amt IN NUMBER,
+      new_salary OUT NUMBER
+    ) AS
+    BEGIN
+      UPDATE EMPLOYEES 
+      SET SALARY = SALARY + inc_amt 
+      WHERE NAME = emp_name;
+      
+      SELECT SALARY INTO new_salary 
+      FROM EMPLOYEES 
+      WHERE NAME = emp_name;
+    END;
+  `,
+  solutionCallName: "INCREASE_SALARY",
+  validationQuery: null
+});
+
+// Insert the test case
+await TestCase.create({
+  questionId: procedureQuestion._id,
+  hidden: false,
+  input: {
+    tables: [
+      {
+        tableName: "EMPLOYEES",
+        rows: [
+          { NAME: "Alice", SALARY: 50000 }
+        ]
+      }
+    ],
+    variables: [
+      { dir: "IN", type: "VARCHAR2", name: "emp_name", value: "Alice" },
+      { dir: "IN", type: "NUMBER", name: "inc_amt", value: 5000 },
+      { dir: "OUT", type: "NUMBER", name: "new_salary", value: null }
+    ]
+  },
+  output: {
+    tables: [
+      {
+        tableName: "EMPLOYEES",
+        rows: [
+          { NAME: "Alice", SALARY: 55000 }
+        ]
+      }
+    ],
+    variables: [
+      { dir: "OUT", type: "NUMBER", name: "new_salary", value: 55000 }
+    ],
+    dbms_output: []
+  },
+  outputTypes: ["tables", "variables"]
+});
+
+console.log("✅ Inserted procedure question and test case.");
+await mongoose.disconnect();
+
+
+/*await TestCase.insertOne({
   questionId: new mongoose.Types.ObjectId('6864195a343034ea76ab5345'),
   input: {
     tables: [
@@ -39,7 +116,6 @@ await TestCase.insertOne({
   outputTypes: ["tables"]
 });
 
-/* 
 
 await Question.insertOne({
   title: "Update a Student's Email",

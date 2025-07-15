@@ -15,13 +15,17 @@ import {
     procedureQuestion2,
     procedureTestCases2
 } from "./sampleData.js";
+
+import { _compareTables } from "../helpers/evaluationHelpers.js";
+
+import { parseInput } from "../utilities/InputParsers.js";
+
 import { 
-     _compareTables,
-    initEvaluationTableEnvironment,
-    initTestCaseTableEnvironment,
-    clearEvaluationTableEnvironment,
-    clearTestCaseTableEnvironment 
-} from "../services/evaluationQueryServices.js";
+    initEvaluationEnvironment,
+    initTestCaseEnvironment,
+    clearEvaluationEnvironment,
+    clearTestCaseEnvironment
+ } from "../services/oracle/evaluationEnvironmentServices.js";
 
 import { _getPassedCount } from "../services/reportGenerationServices.js";
 
@@ -57,7 +61,7 @@ export async function getUserTables(userId) {
     
 }
 
-export async function evaluatePLSQL(userId, plsql, type, testCase, err) {
+export async function evaluatePLSQL(userId, type, testCase, plsql, err) {
     console.log(plsql, type, testCase);
     let testCaseResult = {
         testCaseId: testCase._id
@@ -76,7 +80,7 @@ export async function evaluatePLSQL(userId, plsql, type, testCase, err) {
             query: testCase.validationQuery
         }
 
-        // Execute PL/SQL Procedure
+        // Get PL/SQL output
         const {variables, dbms_output, returnValue } = await executePLSQL(
             userId, 
             plsql,
@@ -145,6 +149,7 @@ export async function evaluatePLSQL(userId, plsql, type, testCase, err) {
         }
 
         testCaseResult = {
+            ...testCaseResult,
             errorMsg: null,
             passed: status,
             output: results
@@ -152,6 +157,7 @@ export async function evaluatePLSQL(userId, plsql, type, testCase, err) {
     } catch (error) {
         console.log(error.stack);
         testCaseResult = {
+            ...testCaseResult,
             errorMsg: error.message,
             passed: false,
             output: null
@@ -178,15 +184,16 @@ export async function generatePLSQLEvaluationReport
         testCases: [],
         code: code
     }
-    await clearEvaluationTableEnvironment(userId);
-    await initEvaluationTableEnvironment(userId, schemas);
+
+    await clearEvaluationEnvironment(userId);
+    await initEvaluationEnvironment(userId, type, schemas, code);
     for await (const testCase of testCases) {
-        await initTestCaseTableEnvironment(userId, testCase.input.tables)
-        let testCaseResult = await evaluatePLSQL(userId, code, type, testCase);
+        await initTestCaseEnvironment(userId, testCase.input.tables)
+        let testCaseResult = await evaluatePLSQL(userId, type, testCase, code);
         submission.testCases.push(testCaseResult)
-        await clearTestCaseTableEnvironment(userId, schemas);
+        await clearTestCaseEnvironment(userId, schemas);
     }
-    await clearEvaluationTableEnvironment(userId);
+    await clearEvaluationEnvironment(userId);
     submission["passedCount"] = _getPassedCount(submission.testCases);
     return submission;
 }
@@ -261,5 +268,5 @@ let procedureOptions2 = {
     code: procedureQuestion2.solutionQuery
 }
 
-const result = await generatePLSQLEvaluationReport(procedureOptions2);
+const result = await generatePLSQLEvaluationReport(triggerOptions);
 console.log(result);

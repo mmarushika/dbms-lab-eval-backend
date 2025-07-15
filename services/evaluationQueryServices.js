@@ -6,7 +6,6 @@ import {
     insertTableInput,
     executeSelect,
     executeQuery,
-    executePLSQLProcedure,
     describeTable, 
     dropAllTables,
     getAllTableNames, 

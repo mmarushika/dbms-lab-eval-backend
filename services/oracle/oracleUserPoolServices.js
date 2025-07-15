@@ -1,6 +1,7 @@
 import oracledb from 'oracledb';
-import { appConfig as config} from '../config/app.js';
-import { getUserOracleCredentials } from '../models/Users.js';
+import { appConfig as config } from "../../config/app.js";
+import { getUserOracleCredentials } from "../../models/Users.js";
+
 const userPools = new Map(); // username => { pool, lastUsed }
 
 export async function initUserPool(userId) {

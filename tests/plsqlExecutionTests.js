@@ -6,11 +6,11 @@ import { executePLSQL } from "../services/oracleDBServices.js";
 
 import {
     functionQuestion,
-    functionTestCase,
+    functionTestCases,
     procedureQuestion,
-    procedureTestCase,
+    procedureTestCases,
     triggerQuestion,
-    triggerTestCase,
+    triggerTestCases,
     blockQuestion,
 } from "./sampleData.js";
 
@@ -33,11 +33,11 @@ let userId = '685bb48ef150d85daa68e8b0';
 async function testPlsqlFunction() {
     let options = {
         callName : functionQuestion.solutionCallName,
-        variables : functionTestCase.input.variables,
-        returnValue: functionTestCase.input.returnValue
+        variables : functionTestCases.input.variables,
+        returnValue: functionTestCases.input.returnValue
     }
     await initEvaluationTableEnvironment(userId, functionQuestion.schemas);
-    await initTestCaseTableEnvironment(userId, functionTestCase.input.tables);
+    await initTestCaseTableEnvironment(userId, functionTestCases.input.tables);
     let result = await executePLSQL(
         userId, 
         functionQuestion.solutionQuery,
@@ -46,7 +46,7 @@ async function testPlsqlFunction() {
     );
     await clearEvaluationTableEnvironment(userId);
     console.log("output", result);
-    console.log("expected output", functionTestCase.output);
+    console.log("expected output", functionTestCases.output);
 }
 
 // Test Procedure 
@@ -72,4 +72,11 @@ async function testPlsqlProcedure() {
 /*console.log("FUNCTION TEST");
 await testPlsqlFunction();*/
 console.log("PROCEDURE TEST");
-await testPlsqlProcedure();
+// await testPlsqlProcedure();
+
+
+import { dropAllProcedures } from "../services/oracleDBServices.js";
+
+import { clearEvaluationEnvironment } from "../helpers/evaluationHelpers.js";
+ 
+clearEvaluationEnvironment(userId);
